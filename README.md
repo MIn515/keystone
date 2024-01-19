@@ -1,31 +1,55 @@
-# Keystone: An Open-Source Secure Enclave Framework for RISC-V Processors
+### Pre-requisite libraries needed:     
 
-![Documentation Status](https://readthedocs.org/projects/keystone-enclave/badge/)
-[![Build Status](https://travis-ci.org/keystone-enclave/keystone.svg?branch=master)](https://travis-ci.org/keystone-enclave/keystone/)
+- **ubuntu 18.04**
+- **Access to github's network**
+- **Git version >= 2.11.0**
 
-Visit [Project Website](https://keystone-enclave.org) for more information.
-
-`master` branch is for public releases.
-`dev` branch is for development use (up-to-date but may not fully documented until merged into `master`).
-
-# Documentation
-
-See [docs](http://docs.keystone-enclave.org) for getting started.
-
-# Contributing
-
-See CONTRIBUTING.md
-
-# Citation
-
-If you want to cite the project, please use the following bibtex:
-
+```bash
+sudo apt update
 ```
-@inproceedings{lee2019keystone,
-    title={Keystone: An Open Framework for Architecting Trusted Execution Environments},
-    author={Dayeol Lee and David Kohlbrenner and Shweta Shinde and Krste Asanovic and Dawn Song},
-    year={2020},
-    booktitle = {Proceedings of the Fifteenth European Conference on Computer Systems},
-    series = {EuroSys’20}
-}
+
+```bash
+sudo apt install autoconf automake autotools-dev bc \
+bison build-essential curl expat libexpat1-dev flex gawk gcc git \
+gperf libgmp-dev libmpc-dev libmpfr-dev libtool texinfo tmux \
+patchutils zlib1g-dev wget bzip2 patch vim-common lbzip2 python3 \
+pkg-config libglib2.0-dev libpixman-1-dev libssl-dev screen \
+device-tree-compiler expect makeself unzip cpio rsync cmake ninja-build p7zip-full
+```
+
+### Build keystone enclave frame
+
+```bash
+./fast-setup.sh
+source ./source.sh
+source ./modify-root-size.sh
+source ~/.bashrc
+mkdir build
+cd build
+cmake ..
+make 
+```
+
+### Test
+
+In the `build/` folder:
+
+```bash
+make tests
+
+find ./examples/tests -name '*.ke' -exec cp \{\} ./overlay/root/ \;
+
+make image
+
+./scripts/run-qemu.sh
+```
+
+Login as `root` with the password `sifive`.
+
+In the `QEMU`:
+
+```bash
+insmod keystone-driver.ko
+
+./tests.ke
 ```
