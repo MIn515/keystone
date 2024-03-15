@@ -80,19 +80,41 @@ macro(add_files FILE_LIST DIRWORK)
   endforeach()
 endmacro()
 
+
+macro(get_runtime_dir var)
+  if("${PROJECT_NAME}" STREQUAL "keystone_sdk")
+    get_filename_component(${var} ../runtime REALPATH BASE_DIR "${CMAKE_SOURCE_DIR}")
+  elseif("${PROJECT_NAME}" STREQUAL "keystone")
+    get_filename_component(${var} ./runtime REALPATH BASE_DIR "${CMAKE_SOURCE_DIR}")
+  else()
+    message(FATAL_ERROR "Don't know how to find runtime from current directory" "${CMAKE_SOURCE_DIR}")
+  endif()
+endmacro()
+
+
 # CMake macro for Eyrie runtime and Keystone Package
-macro(add_eyrie_runtime target_name tag plugins) # the files are passed via ${ARGN}
+macro(add_eyrie_runtime target_name plugins) # the files are passed via ${ARGN}
   set(runtime_prefix runtime)
   set (eyrie_src ${CMAKE_CURRENT_BINARY_DIR}/${runtime_prefix}/src/eyrie-${target_name})
 
+  separate_arguments(PLUGIN_ARGS UNIX_COMMAND ${plugins})
+  set(PLUGIN_FLAGS "")
+  foreach(plugin IN ITEMS ${PLUGIN_ARGS})
+    string(TOUPPER ${plugin} PLUGIN_UPPER)
+    list(APPEND PLUGIN_FLAGS "-D${PLUGIN_UPPER}=ON")
+  endforeach()
+
+  list(APPEND PLUGIN_FLAGS "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}")
+  list(APPEND PLUGIN_FLAGS "-DCMAKE_OBJCOPY=${CMAKE_OBJCOPY}")
+
+  get_runtime_dir(EYRIE_SRCDIR)
+
   ExternalProject_Add(eyrie-${target_name}
     PREFIX ${runtime_prefix}
-    GIT_REPOSITORY https://github.com/keystone-enclave/keystone-runtime
-    GIT_TAG ${tag}
-    CONFIGURE_COMMAND ""
-    UPDATE_COMMAND git fetch
-    BUILD_COMMAND ./build.sh ${plugins}
+    DOWNLOAD_COMMAND rm -rf ${eyrie_src} && cp -ar ${EYRIE_SRCDIR} ${eyrie_src}
+    CMAKE_ARGS "${PLUGIN_FLAGS}" -DEYRIE_SRCDIR=${EYRIE_SRCDIR}
     BUILD_IN_SOURCE TRUE
+    BUILD_BYPRODUCTS ${eyrie_src}/eyrie-rt ${eyrie_src}/.options_log
     INSTALL_COMMAND "")
 
   add_custom_target(${target_name} DEPENDS ${ARGN})
